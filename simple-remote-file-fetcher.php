@@ -1,10 +1,18 @@
 <?php
 /*
-Plugin Name: Simple Remote File Fetcher
-Description: Fetch any remote file with ultra fast speed into your WordPress directory.
-Version: 2.4
-Author: Hfarazm Software LLC
-Author URI: https://hfarazm.com/plugins
+Plugin Name:       Simple Remote File Fetcher
+Plugin URI:        https://hfarazm.com/plugins/simple-remote-file-fetcher
+Description:       Fetch any remote file with ultra fast speed into your WordPress directory.
+Version:           2.4
+Author:            Hfarazm Software LLC
+Author URI:        https://hfarazm.com/plugins
+License:           GPL v2 or later
+License URI:       https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain:       simple-remote-file-fetcher
+Domain Path:       /languages
+Requires at least: 5.0
+Requires PHP:      7.2
+Tested up to:      6.7
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
