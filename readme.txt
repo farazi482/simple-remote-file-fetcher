@@ -73,6 +73,18 @@ Yes. The plugin is restricted to Administrators only, all forms are nonce-protec
 
 Some hosting environments block outbound HTTP requests. Contact your host and ask them to allow outbound cURL connections.
 
+== Testing Instructions ==
+
+1. Install and activate the plugin. Go to **File Fetcher** in the WordPress admin sidebar (it appears just below Media).
+
+2. In the URL field, paste any direct file URL and click **Fetch File**. A good test URL is: `https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip` — you should see a live progress bar with download speed and estimated time remaining.
+
+3. Once done, confirm the success message shows the saved path. Then scroll down to the **Download History** table — the entry should appear with a **View file** link (opens the file in a new tab) and a **Copy link** button.
+
+4. Fetch the same URL a second time — you should be prompted to either **Overwrite** the existing file or **Save as** a renamed copy (e.g. `zip_5MB_1.zip`).
+
+5. To test the page-leave warning: start a large file download and immediately try to close the tab or navigate away — the browser should show a confirmation dialog warning that the download will be cancelled.
+
 == Screenshots ==
 
 1. Main plugin page with URL input and live progress bar
