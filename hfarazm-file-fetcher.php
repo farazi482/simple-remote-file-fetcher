@@ -200,7 +200,7 @@ function srf_fetcher_page() {
                 </p>
 
                 <!-- Status / conflict / progress area -->
-                <div id="srf_status" style="display:none; margin:16px 0; padding:14px 18px; border-left:4px solid #72aee6; background:#f0f6fc; max-width:680px;"></div>
+                <div id="srf_status" style="display:none; margin:16px 0; padding:14px 18px; border:1px solid #c3c4c7; border-left:4px solid #72aee6; background:#f0f6fc; border-radius:3px; box-shadow:0 1px 1px rgba(0,0,0,.04);"></div>
 
                 <?php srf_render_history(); ?>
             </div>
@@ -318,6 +318,14 @@ function srf_fetcher_page() {
         function setFetching(active) {
             fetchBtn.disabled = active;
             fetchBtn.textContent = active ? 'Fetching…' : 'Fetch File';
+            // Warn user before leaving while a fetch is in progress
+            if (active) {
+                window.onbeforeunload = function() {
+                    return 'File is still being fetched. If you leave, the download will be cancelled.';
+                };
+            } else {
+                window.onbeforeunload = null;
+            }
         }
 
         // ── Progress bar HTML ─────────────────────────────────────────────────
@@ -333,12 +341,15 @@ function srf_fetcher_page() {
                 : `<div style="height:100%;width:40%;background:#2271b1;animation:srf_indeterminate 1.2s infinite ease-in-out;border-radius:3px;"></div>`;
 
             return `
-                <strong>⬇ Downloading…</strong>
+                <strong>Downloading&hellip;</strong>
                 <div style="margin:10px 0 4px;height:14px;background:#ddd;border-radius:3px;overflow:hidden;">${barFill}</div>
-                <div style="display:flex;gap:24px;font-size:13px;color:#444;flex-wrap:wrap;">
+                <div style="display:flex;gap:24px;font-size:13px;color:#444;flex-wrap:wrap;margin-bottom:10px;">
                     <span>${sizeText}</span>
-                    <span>Speed: <strong>${speed != null ? fmt_bytes(speed) + '/s' : '—'}</strong></span>
+                    <span>Speed: <strong>${speed != null ? fmt_bytes(speed) + '/s' : '&mdash;'}</strong></span>
                     <span>ETA: <strong>${fmt_time(eta)}</strong></span>
+                </div>
+                <div style="font-size:12px;color:#b32d2e;background:#fef7f1;border:1px solid #f0b849;border-radius:3px;padding:7px 10px;">
+                    <strong>Do not refresh this page or close this tab</strong> &mdash; doing so will cancel the download.
                 </div>`;
         }
 
@@ -405,12 +416,12 @@ function srf_fetcher_page() {
 
                     if (data.status === 'conflict') {
                         show(`
-                            <strong>⚠ File already exists:</strong>
+                            <strong>&#9888; File already exists:</strong>
                             <code style="margin-left:6px;">${esc(data.filename)}</code><br>
                             <span style="font-size:13px;color:#555;">Choose how to proceed:</span>
-                            <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
-                                <button class="button button-primary" id="srf_overwrite">🔄 Overwrite existing file</button>
-                                <button class="button" id="srf_rename">📄 Save as <strong>${esc(data.renamed)}</strong></button>
+                            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:nowrap;align-items:center;">
+                                <button class="button button-primary" id="srf_overwrite">Overwrite existing file</button>
+                                <button class="button" id="srf_rename">Save as <strong>${esc(data.renamed)}</strong></button>
                             </div>
                         `, '#ffb900');
 
