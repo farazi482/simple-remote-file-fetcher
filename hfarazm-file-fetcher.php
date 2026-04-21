@@ -181,26 +181,33 @@ function srf_fetcher_page() {
             <!-- ── Main content ── -->
             <div style="flex:1;min-width:0;">
 
-                <table class="form-table" style="margin-top:0;">
-                    <tr>
-                        <th scope="row"><label for="srf_url"><?php esc_html_e( 'Remote File URL', 'hfarazm-file-fetcher' ); ?></label></th>
-                        <td>
-                            <input
-                                type="url"
-                                id="srf_url"
-                                style="width:100%;max-width:580px;"
-                                placeholder="<?php esc_attr_e( 'e.g. https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip', 'hfarazm-file-fetcher' ); ?>"
-                            >
-                            <p class="description"><?php esc_html_e( 'The file will be saved in the WordPress root directory using the filename from the URL.', 'hfarazm-file-fetcher' ); ?></p>
-                        </td>
-                    </tr>
-                </table>
-                <p>
-                    <button id="srf_fetch_btn" class="button button-primary"><?php esc_html_e( 'Fetch File', 'hfarazm-file-fetcher' ); ?></button>
-                </p>
+                <!-- URL input card -->
+                <div style="background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 1px 1px rgba(0,0,0,.04);padding:24px 28px 20px;margin-bottom:16px;">
+                    <label for="srf_url" style="display:block;font-size:14px;font-weight:600;color:#1d2327;margin-bottom:10px;">
+                        <?php esc_html_e( 'Remote File URL', 'hfarazm-file-fetcher' ); ?>
+                    </label>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input
+                            type="url"
+                            id="srf_url"
+                            style="flex:1;min-width:0;height:36px;font-size:14px;padding:0 10px;border:1px solid #8c8f94;border-radius:3px;box-shadow:inset 0 1px 2px rgba(0,0,0,.07);color:#2c3338;"
+                            placeholder="<?php esc_attr_e( 'https://example.com/path/to/file.zip', 'hfarazm-file-fetcher' ); ?>"
+                        >
+                        <button id="srf_paste_btn" type="button" class="button" style="height:36px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;">
+                            <span class="dashicons dashicons-clipboard" style="font-size:16px;width:16px;height:16px;margin-top:1px;"></span>
+                            <?php esc_html_e( 'Paste', 'hfarazm-file-fetcher' ); ?>
+                        </button>
+                    </div>
+                    <p style="margin:8px 0 0;font-size:12px;color:#646970;">
+                        <?php esc_html_e( 'The file will be saved in the WordPress root directory using the filename from the URL.', 'hfarazm-file-fetcher' ); ?>
+                    </p>
+                    <div style="margin-top:16px;border-top:1px solid #f0f0f1;padding-top:16px;">
+                        <button id="srf_fetch_btn" class="button button-primary button-large"><?php esc_html_e( 'Fetch File', 'hfarazm-file-fetcher' ); ?></button>
+                    </div>
+                </div>
 
                 <!-- Status / conflict / progress area -->
-                <div id="srf_status" style="display:none; margin:16px 0; padding:14px 18px; border:1px solid #c3c4c7; border-left:4px solid #72aee6; background:#f0f6fc; border-radius:3px; box-shadow:0 1px 1px rgba(0,0,0,.04);"></div>
+                <div id="srf_status" style="display:none; margin:0 0 16px; padding:14px 18px; border:1px solid #c3c4c7; border-left:4px solid #72aee6; background:#f0f6fc; border-radius:3px; box-shadow:0 1px 1px rgba(0,0,0,.04);"></div>
 
                 <?php srf_render_history(); ?>
             </div>
@@ -472,6 +479,30 @@ function srf_fetcher_page() {
         urlInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') fetchBtn.click();
         });
+
+        // ── Paste from clipboard ──────────────────────────────────────────────
+        const pasteBtn = document.getElementById('srf_paste_btn');
+        if ( pasteBtn ) {
+            pasteBtn.addEventListener('click', function() {
+                if ( navigator.clipboard && navigator.clipboard.readText ) {
+                    navigator.clipboard.readText().then(function(text) {
+                        urlInput.value = text.trim();
+                        urlInput.focus();
+                        pasteBtn.textContent = ' Pasted!';
+                        setTimeout(function() {
+                            pasteBtn.innerHTML = '<span class="dashicons dashicons-clipboard" style="font-size:16px;width:16px;height:16px;margin-top:1px;vertical-align:middle;"></span> Paste';
+                        }, 1500);
+                    }).catch(function() {
+                        urlInput.focus();
+                        document.execCommand('paste');
+                    });
+                } else {
+                    // Fallback for browsers without clipboard API
+                    urlInput.focus();
+                    document.execCommand('paste');
+                }
+            });
+        }
     })();
     </script>
 
