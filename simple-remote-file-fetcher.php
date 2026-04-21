@@ -2,7 +2,7 @@
 /*
 Plugin Name: Simple Remote File Fetcher
 Description: Fetch any remote file and save it into your WordPress directory.
-Version: 2.3
+Version: 2.4
 Author: Hfarazm Software LLC
 */
 
@@ -158,31 +158,6 @@ function srf_fetcher_page() {
             <!-- ── Main content ── -->
             <div style="flex:1;min-width:0;">
 
-                <!-- How it works -->
-                <div style="display:flex;gap:0;margin-bottom:24px;background:#fff;border:1px solid #dcdcde;border-radius:6px;overflow:hidden;">
-                    <?php
-                    $steps = [
-                        ['🔗', 'Paste URL',       'Enter the direct URL of any remote file you want to download.'],
-                        ['🖥',  'Server Fetches',  'WordPress fetches the file server-side — no browser download needed.'],
-                        ['📊', 'Live Progress',   'Watch real-time speed, progress bar, and estimated time remaining.'],
-                        ['💾', 'Auto Saved',      'File is saved to your WP root with the original filename.'],
-                        ['📋', 'History Logged',  'Every download is recorded with path, size, and timestamp.'],
-                    ];
-                    $total = count($steps);
-                    foreach ( $steps as $idx => $s ) :
-                        $last = $idx === $total - 1;
-                    ?>
-                    <div style="flex:1;padding:14px 12px;text-align:center;border-right:<?php echo $last ? 'none' : '1px solid #dcdcde'; ?>;position:relative;">
-                        <div style="font-size:22px;margin-bottom:6px;"><?php echo $s[0]; ?></div>
-                        <div style="font-size:11px;font-weight:600;color:#1d2327;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;"><?php echo esc_html($s[1]); ?></div>
-                        <div style="font-size:11px;color:#646970;line-height:1.4;"><?php echo esc_html($s[2]); ?></div>
-                        <?php if ( ! $last ) : ?>
-                        <div style="position:absolute;right:-9px;top:50%;transform:translateY(-50%);font-size:14px;color:#aaa;z-index:1;">&#9654;</div>
-                        <?php endif; ?>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-
                 <table class="form-table" style="margin-top:0;">
                     <tr>
                         <th scope="row"><label for="srf_url">Remote File URL</label></th>
@@ -208,41 +183,69 @@ function srf_fetcher_page() {
             </div>
 
             <!-- ── Sidebar ── -->
-            <div style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;">
+            <div style="width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 
-                <!-- Donate -->
+                <!-- How it works -->
+                <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;">
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;">How It Works</p>
+                    <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;">
+                        <?php
+                        $steps = [
+                            'Paste a file URL',
+                            'Server fetches the file',
+                            'Live progress shown',
+                            'Saved to WP root',
+                            'Download logged',
+                        ];
+                        foreach ( $steps as $i => $step ) : ?>
+                        <li style="display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#3c434a;line-height:1.4;">
+                            <span style="flex-shrink:0;width:16px;height:16px;border-radius:50%;background:#2271b1;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;"><?php echo $i + 1; ?></span>
+                            <?php echo esc_html($step); ?>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <!-- Donate via PayPal -->
                 <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
-                    <div style="font-size:20px;margin-bottom:6px;">☕</div>
-                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Support This Plugin</div>
-                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">If this plugin saves you time, consider buying me a coffee!</p>
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;">Support This Plugin</p>
+                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;">If this plugin saves you time, consider a small donation.</p>
                     <a href="https://www.paypal.com/donate/?hosted_button_id=U9SCFW8YL8M4J"
                        target="_blank" rel="noopener"
-                       style="display:inline-block;background:#0070ba;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
-                        💙 Donate via PayPal
+                       style="display:inline-flex;align-items:center;gap:7px;background:#003087;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:12px;font-weight:600;width:100%;box-sizing:border-box;justify-content:center;">
+                        <!-- PayPal logo mark -->
+                        <svg width="16" height="18" viewBox="0 0 24 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M19.5 3.5C18.5 1.5 16.3 1 13.8 1H6.3C5.6 1 5 1.5 4.9 2.2L2 20.2C1.9 20.7 2.3 21.2 2.8 21.2H7.3L8.4 14.2L8.3 14.6C8.4 13.9 9 13.4 9.7 13.4H12C16.4 13.4 19.8 11.6 20.8 6.4C20.8 6.3 20.9 6 20.9 6C21.2 4.8 20.9 4 19.5 3.5Z" fill="#009cde"/>
+                            <path d="M20.8 6C20.8 6.3 20.8 6.3 20.8 6.4C19.8 11.6 16.4 13.4 12 13.4H9.7C9 13.4 8.4 13.9 8.3 14.6L6.8 23.8C6.7 24.2 7 24.6 7.5 24.6H11.4C12 24.6 12.5 24.2 12.6 23.6V23.3L13.4 18.3V18C13.5 17.4 14 17 14.6 17H15.2C18.9 17 21.8 15.5 22.6 11.1C23 9.3 22.8 7.7 21.8 6.7C21.5 6.4 21.2 6.2 20.8 6Z" fill="#012169"/>
+                        </svg>
+                        Donate via PayPal
                     </a>
                 </div>
 
-                <!-- Fiverr -->
+                <!-- Hire on Fiverr -->
                 <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
-                    <div style="font-size:20px;margin-bottom:6px;">🟢</div>
-                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Hire Me on Fiverr</div>
-                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">Need custom WordPress development or SEO work?</p>
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;">Hire Me</p>
+                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;">WordPress dev &amp; SEO services available.</p>
                     <a href="https://www.fiverr.com/users/wordpressseodev"
                        target="_blank" rel="noopener"
-                       style="display:inline-block;background:#1dbf73;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
-                        View Fiverr Profile
+                       style="display:inline-flex;align-items:center;gap:7px;background:#1dbf73;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:12px;font-weight:600;width:100%;box-sizing:border-box;justify-content:center;margin-bottom:8px;">
+                        <!-- Fiverr logo mark -->
+                        <svg width="14" height="14" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="50" fill="#fff"/>
+                            <text x="50" y="68" text-anchor="middle" font-size="52" font-family="Arial,sans-serif" font-weight="900" fill="#1dbf73">f</text>
+                            <circle cx="73" cy="26" r="7" fill="#1dbf73"/>
+                        </svg>
+                        Fiverr Profile
                     </a>
-                </div>
-
-                <!-- Upwork -->
-                <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
-                    <div style="font-size:20px;margin-bottom:6px;">🔵</div>
-                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Hire Me on Upwork</div>
-                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">Looking for a freelance WordPress or PHP developer?</p>
                     <a href="https://www.upwork.com/freelancers/hafizfaraz"
                        target="_blank" rel="noopener"
-                       style="display:inline-block;background:#14a800;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
-                        View Upwork Profile
+                       style="display:inline-flex;align-items:center;gap:7px;background:#14a800;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:12px;font-weight:600;width:100%;box-sizing:border-box;justify-content:center;">
+                        <!-- Upwork logo mark -->
+                        <svg width="14" height="14" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="50" cy="50" r="50" fill="#fff"/>
+                            <text x="50" y="68" text-anchor="middle" font-size="52" font-family="Arial,sans-serif" font-weight="900" fill="#14a800">U</text>
+                        </svg>
+                        Upwork Profile
                     </a>
                 </div>
 
