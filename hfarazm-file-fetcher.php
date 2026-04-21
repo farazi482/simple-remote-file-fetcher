@@ -181,23 +181,6 @@ add_action('wp_ajax_srf_get_progress', function() {
     }
 });
 
-// ── AJAX: cancel download ────────────────────────────────────────────────────
-add_action('wp_ajax_srf_cancel_download', function() {
-    check_ajax_referer('srf_ajax_nonce', 'nonce');
-    if ( ! current_user_can('manage_options') ) wp_die('Forbidden', 403);
-
-    $token         = sanitize_key( wp_unslash( $_POST['token'] ?? '' ) );
-    $progress_file = sys_get_temp_dir() . '/srf_progress_' . $token . '.json';
-
-    if ( file_exists($progress_file) ) {
-        $data              = json_decode( file_get_contents($progress_file), true ) ?: [];
-        $data['cancelled'] = true;
-        file_put_contents($progress_file, json_encode($data), LOCK_EX);
-    }
-
-    wp_send_json(['status' => 'ok']);
-});
-
 // ── Admin page ───────────────────────────────────────────────────────────────
 function srf_fetcher_page() {
     $nonce = wp_create_nonce('srf_ajax_nonce');
@@ -321,9 +304,8 @@ function srf_fetcher_page() {
         const fetchBtn  = document.getElementById('srf_fetch_btn');
         const statusBox = document.getElementById('srf_status');
 
-        let pollTimer    = null;
-        let pollSamples  = []; // [{time, bytes}] for speed calc
-        let activeToken  = null;
+        let pollTimer   = null;
+        let pollSamples = []; // [{time, bytes}] for speed calc
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -378,11 +360,8 @@ function srf_fetcher_page() {
                 : `<div style="height:100%;width:40%;background:#2271b1;animation:srf_indeterminate 1.2s infinite ease-in-out;border-radius:3px;"></div>`;
 
             return `
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-                    <strong>Downloading&hellip;</strong>
-                    <button id="srf_cancel_btn" class="button" style="color:#b32d2e;border-color:#b32d2e;">Cancel</button>
-                </div>
-                <div style="margin:0 0 4px;height:14px;background:#ddd;border-radius:3px;overflow:hidden;">${barFill}</div>
+                <strong>Downloading&hellip;</strong>
+                <div style="margin:8px 0 4px;height:14px;background:#ddd;border-radius:3px;overflow:hidden;">${barFill}</div>
                 <div style="display:flex;gap:24px;font-size:13px;color:#444;flex-wrap:wrap;margin-bottom:10px;">
                     <span>${sizeText}</span>
                     <span>Speed: <strong>${speed != null ? fmt_bytes(speed) + '/s' : '&mdash;'}</strong></span>
@@ -426,7 +405,6 @@ function srf_fetcher_page() {
 
                         if (!data.done) {
                             show(progressHTML(dl, tot, speed, eta), '#72aee6');
-                            attachCancelBtn(token);
                         }
                         // When done, the fetch() promise resolves and handles the final state
                     });
@@ -435,28 +413,11 @@ function srf_fetcher_page() {
 
         // ── Kick off download ─────────────────────────────────────────────────
 
-        function attachCancelBtn(token) {
-            const btn = document.getElementById('srf_cancel_btn');
-            if (!btn) return;
-            btn.onclick = function() {
-                btn.disabled = true;
-                btn.textContent = 'Cancelling…';
-                const body = new FormData();
-                body.append('action', 'srf_cancel_download');
-                body.append('nonce',  nonce);
-                body.append('token',  token);
-                fetch(ajaxUrl, {method: 'POST', body: body});
-                show('<strong>Cancelling&hellip;</strong><br><span style="font-size:13px;color:#646970;">Waiting for the current transfer to finish before removing the file.</span>', '#ffb900');
-            };
-        }
-
         function doFetch(url, conflictAction) {
             const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-            activeToken = token;
 
             setFetching(true);
             show(progressHTML(0, 0, null, null), '#72aee6');
-            attachCancelBtn(token);
             startPolling(token);
 
             const body = new FormData();
@@ -489,9 +450,6 @@ function srf_fetcher_page() {
                         document.getElementById('srf_rename').onclick = function() {
                             doFetch(url, 'rename');
                         };
-
-                    } else if (data.status === 'cancelled') {
-                        show('&#10006; <strong>Download cancelled.</strong> The file was not saved.', '#d63638');
 
                     } else if (data.status === 'success') {
                         show(`
