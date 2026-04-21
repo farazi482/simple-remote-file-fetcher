@@ -4,7 +4,7 @@ Tags:              file fetcher, remote download, file downloader, server downlo
 Requires at least: 5.0
 Tested up to:      6.7
 Requires PHP:      7.2
-Stable tag:        2.4
+Stable tag:        2.5
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,12 @@ Some hosting environments block outbound HTTP requests. Contact your host and as
 3. Download history table
 
 == Changelog ==
+
+= 2.5 =
+* Fixed: replaced @unlink with wp_delete_file() per Plugin Check guidelines
+* Fixed: added allowlist validation for conflict_action parameter
+* Fixed: wrapped all user-facing strings in __() for i18n/translation support
+* Fixed: escaped integer outputs with absint() in admin page and history table
 
 = 2.4 =
 * Added complete WordPress plugin header fields (Plugin URI, License, Text Domain, Requires PHP, Tested up to)
