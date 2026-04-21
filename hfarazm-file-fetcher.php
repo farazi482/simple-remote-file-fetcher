@@ -20,11 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 // ── Admin menu ───────────────────────────────────────────────────────────────
 add_action('admin_menu', function() {
     add_menu_page(
-        __( 'Remote File Fetcher', 'hfarazm-file-fetcher' ),
+        __( 'Hfarazm File Fetcher', 'hfarazm-file-fetcher' ),
         __( 'File Fetcher', 'hfarazm-file-fetcher' ),
         'manage_options',
         'remote-file-fetcher',
-        'srf_fetcher_page'
+        'srf_fetcher_page',
+        'dashicons-cloud-download'
     );
 });
 
