@@ -1,9 +1,10 @@
 <?php
 /*
 Plugin Name: Simple Remote File Fetcher
-Description: Fetch any remote file and save it into your WordPress directory.
+Description: Fetch any remote file with ultra fast speed into your WordPress directory.
 Version: 2.4
 Author: Hfarazm Software LLC
+Author URI: https://hfarazm.com/plugins
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
