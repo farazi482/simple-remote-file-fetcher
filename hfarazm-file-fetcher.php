@@ -86,7 +86,7 @@ add_action('wp_ajax_srf_start_download', function() {
     $full_path     = ABSPATH . $filename;
     $progress_file = sys_get_temp_dir() . '/srf_progress_' . $token . '.json';
 
-    // HEAD request to get file size for initial progress display
+    // HEAD request to get file size for progress display
     $head  = wp_remote_head( $url, [ 'timeout' => 15, 'redirection' => 5 ] );
     $total = 0;
     if ( ! is_wp_error($head) ) {
@@ -94,94 +94,44 @@ add_action('wp_ajax_srf_start_download', function() {
         $total          = $content_length ? absint($content_length) : 0;
     }
 
-    // Write initial progress file
+    // Write initial progress — store destination path so poller can read filesize()
     file_put_contents($progress_file, json_encode([
         'downloaded' => 0,
         'total'      => $total,
         'path'       => $full_path,
         'done'       => false,
-        'cancelled'  => false,
     ]), LOCK_EX);
 
-    /*
-     * Direct cURL is required here because wp_remote_get() is a fully blocking call
-     * with no mechanism to interrupt it mid-transfer. The CURLOPT_PROGRESSFUNCTION
-     * callback lets us check a cancel flag every ~1 second and abort immediately when
-     * the user clicks Cancel — something the WP HTTP API cannot support.
-     *
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_init
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_setopt_array
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_exec
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_error
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_getinfo
-     * phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_close
-     * phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen
-     * phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fclose
-     */
-    $last_cancel_check = 0;
-    $was_cancelled     = false;
-
-    $ch = curl_init( $url ); // phpcs:ignore
-    $fp = fopen( $full_path, 'wb' ); // phpcs:ignore
-
-    if ( ! $fp ) {
-        /* translators: %s: full server path of the destination file */
-        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'Cannot write to: %s', 'hfarazm-file-fetcher' ), $full_path )]);
-    }
-
-    curl_setopt_array( $ch, [ // phpcs:ignore
-        CURLOPT_FILE             => $fp,
-        CURLOPT_FOLLOWLOCATION   => true,
-        CURLOPT_TIMEOUT          => 300,
-        CURLOPT_NOPROGRESS       => false,
-        CURLOPT_SSL_VERIFYPEER   => true,
-        CURLOPT_USERAGENT        => 'WordPress/' . get_bloginfo('version'),
-        CURLOPT_PROGRESSFUNCTION => function( $ch, $total_dl, $downloaded ) use ( $progress_file, $full_path, &$last_cancel_check, &$was_cancelled ) {
-            $now = time();
-            // Check cancel flag at most once per second to avoid excessive file reads
-            if ( $now - $last_cancel_check >= 1 ) {
-                $last_cancel_check = $now;
-                $pdata = json_decode( file_get_contents( $progress_file ), true );
-                if ( ! empty($pdata['cancelled']) ) {
-                    $was_cancelled = true;
-                    return 1; // non-zero aborts cURL immediately
-                }
-            }
-            if ( $total_dl > 0 || $downloaded > 0 ) {
-                file_put_contents($progress_file, json_encode([
-                    'downloaded' => (int) $downloaded,
-                    'total'      => (int) $total_dl,
-                    'path'       => $full_path,
-                    'done'       => false,
-                    'cancelled'  => false,
-                ]), LOCK_EX);
-            }
-            return 0;
-        },
+    // ── Download using WP HTTP API with streaming ─────────────────────────────
+    $response = wp_remote_get( $url, [
+        'timeout'  => 300,
+        'stream'   => true,
+        'filename' => $full_path,
     ]);
 
-    curl_exec( $ch ); // phpcs:ignore
-    $err  = curl_error( $ch ); // phpcs:ignore
-    $http = curl_getinfo( $ch, CURLINFO_HTTP_CODE ); // phpcs:ignore
-    curl_close( $ch ); // phpcs:ignore
-    fclose( $fp ); // phpcs:ignore
-    // phpcs:enable
+    if ( is_wp_error($response) ) {
+        wp_delete_file( $full_path );
+        file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
+        wp_send_json(['status' => 'error', 'message' => $response->get_error_message()]);
+    }
 
-    // Cancelled mid-transfer
-    if ( $was_cancelled ) {
+    $http = wp_remote_retrieve_response_code($response);
+    if ( $http >= 400 ) {
+        wp_delete_file( $full_path );
+        file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
+        /* translators: %s: HTTP status code */
+        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'HTTP error: %s', 'hfarazm-file-fetcher' ), $http )]);
+    }
+
+    $size = file_exists($full_path) ? filesize($full_path) : 0;
+
+    // Check if user cancelled while download was running
+    $progress_data = json_decode( file_get_contents($progress_file), true );
+    if ( ! empty($progress_data['cancelled']) ) {
         wp_delete_file( $full_path );
         file_put_contents($progress_file, json_encode(['done' => true, 'cancelled' => true]), LOCK_EX);
         wp_send_json(['status' => 'cancelled']);
     }
-
-    if ( ! empty($err) || $http >= 400 ) {
-        wp_delete_file( $full_path );
-        file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
-        /* translators: %s: HTTP status code */
-        wp_send_json(['status' => 'error', 'message' => $err ?: sprintf( __( 'HTTP error: %s', 'hfarazm-file-fetcher' ), $http )]);
-    }
-
-    $size = file_exists($full_path) ? filesize($full_path) : 0;
 
     file_put_contents($progress_file, json_encode([
         'downloaded' => $size,
