@@ -1,4 +1,4 @@
-=== Simple Remote File Fetcher ===
+=== Hfarazm Remote File Fetcher ===
 Contributors:      hfarazm
 Tags:              file fetcher, remote download, file downloader, server download, wget
 Requires at least: 5.0

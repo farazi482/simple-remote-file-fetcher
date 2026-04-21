@@ -1,14 +1,14 @@
 <?php
 /*
-Plugin Name:       Simple Remote File Fetcher
-Plugin URI:        https://hfarazm.com/plugins/simple-remote-file-fetcher
+Plugin Name:       Hfarazm Remote File Fetcher
+Plugin URI:        https://hfarazm.com/plugins/hfarazm-remote-file-fetcher
 Description:       Fetch any remote file with ultra fast speed into your WordPress directory.
 Version:           2.6
 Author:            Hfarazm Software LLC
 Author URI:        https://hfarazm.com/plugins
 License:           GPL v2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
-Text Domain:       simple-remote-file-fetcher
+Text Domain:       hfarazm-remote-file-fetcher
 Domain Path:       /languages
 Requires at least: 5.0
 Requires PHP:      7.2
@@ -20,8 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 // ── Admin menu ───────────────────────────────────────────────────────────────
 add_action('admin_menu', function() {
     add_menu_page(
-        __( 'Remote File Fetcher', 'simple-remote-file-fetcher' ),
-        __( 'File Fetcher', 'simple-remote-file-fetcher' ),
+        __( 'Remote File Fetcher', 'hfarazm-remote-file-fetcher' ),
+        __( 'File Fetcher', 'hfarazm-remote-file-fetcher' ),
         'manage_options',
         'remote-file-fetcher',
         'srf_fetcher_page'
@@ -56,14 +56,14 @@ add_action('wp_ajax_srf_start_download', function() {
     }
 
     if ( empty($url) || empty($token) ) {
-        wp_send_json(['status' => 'error', 'message' => __( 'Invalid request.', 'simple-remote-file-fetcher' )]);
+        wp_send_json(['status' => 'error', 'message' => __( 'Invalid request.', 'hfarazm-remote-file-fetcher' )]);
     }
 
     $parsed   = wp_parse_url($url);
     $filename = isset($parsed['path']) ? basename($parsed['path']) : '';
 
     if ( empty($filename) ) {
-        wp_send_json(['status' => 'error', 'message' => __( 'Could not determine filename from URL.', 'simple-remote-file-fetcher' )]);
+        wp_send_json(['status' => 'error', 'message' => __( 'Could not determine filename from URL.', 'hfarazm-remote-file-fetcher' )]);
     }
 
     // Conflict check
@@ -118,7 +118,7 @@ add_action('wp_ajax_srf_start_download', function() {
         wp_delete_file( $full_path );
         file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
         /* translators: %s: HTTP status code */
-        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'HTTP error: %s', 'simple-remote-file-fetcher' ), $http )]);
+        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'HTTP error: %s', 'hfarazm-remote-file-fetcher' ), $http )]);
     }
 
     $size = file_exists($full_path) ? filesize($full_path) : 0;
@@ -173,7 +173,7 @@ function srf_fetcher_page() {
     $nonce = wp_create_nonce('srf_ajax_nonce');
     ?>
     <div class="wrap">
-        <h2><?php esc_html_e( 'Remote File Fetcher', 'simple-remote-file-fetcher' ); ?></h2>
+        <h2><?php esc_html_e( 'Remote File Fetcher', 'hfarazm-remote-file-fetcher' ); ?></h2>
 
         <div style="display:flex;gap:28px;align-items:flex-start;">
 
@@ -182,20 +182,20 @@ function srf_fetcher_page() {
 
                 <table class="form-table" style="margin-top:0;">
                     <tr>
-                        <th scope="row"><label for="srf_url"><?php esc_html_e( 'Remote File URL', 'simple-remote-file-fetcher' ); ?></label></th>
+                        <th scope="row"><label for="srf_url"><?php esc_html_e( 'Remote File URL', 'hfarazm-remote-file-fetcher' ); ?></label></th>
                         <td>
                             <input
                                 type="url"
                                 id="srf_url"
                                 style="width:100%;max-width:580px;"
-                                placeholder="<?php esc_attr_e( 'e.g. https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip', 'simple-remote-file-fetcher' ); ?>"
+                                placeholder="<?php esc_attr_e( 'e.g. https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip', 'hfarazm-remote-file-fetcher' ); ?>"
                             >
-                            <p class="description"><?php esc_html_e( 'The file will be saved in the WordPress root directory using the filename from the URL.', 'simple-remote-file-fetcher' ); ?></p>
+                            <p class="description"><?php esc_html_e( 'The file will be saved in the WordPress root directory using the filename from the URL.', 'hfarazm-remote-file-fetcher' ); ?></p>
                         </td>
                     </tr>
                 </table>
                 <p>
-                    <button id="srf_fetch_btn" class="button button-primary"><?php esc_html_e( 'Fetch File', 'simple-remote-file-fetcher' ); ?></button>
+                    <button id="srf_fetch_btn" class="button button-primary"><?php esc_html_e( 'Fetch File', 'hfarazm-remote-file-fetcher' ); ?></button>
                 </p>
 
                 <!-- Status / conflict / progress area -->
@@ -209,15 +209,15 @@ function srf_fetcher_page() {
 
                 <!-- How it works -->
                 <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;">
-                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'How It Works', 'simple-remote-file-fetcher' ); ?></p>
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'How It Works', 'hfarazm-remote-file-fetcher' ); ?></p>
                     <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;">
                         <?php
                         $steps = [
-                            __( 'Paste a file URL', 'simple-remote-file-fetcher' ),
-                            __( 'Server fetches the file', 'simple-remote-file-fetcher' ),
-                            __( 'Live progress shown', 'simple-remote-file-fetcher' ),
-                            __( 'Saved to WP root', 'simple-remote-file-fetcher' ),
-                            __( 'Download logged', 'simple-remote-file-fetcher' ),
+                            __( 'Paste a file URL', 'hfarazm-remote-file-fetcher' ),
+                            __( 'Server fetches the file', 'hfarazm-remote-file-fetcher' ),
+                            __( 'Live progress shown', 'hfarazm-remote-file-fetcher' ),
+                            __( 'Saved to WP root', 'hfarazm-remote-file-fetcher' ),
+                            __( 'Download logged', 'hfarazm-remote-file-fetcher' ),
                         ];
                         foreach ( $steps as $i => $step ) : ?>
                         <li style="display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#3c434a;line-height:1.4;">
@@ -230,8 +230,8 @@ function srf_fetcher_page() {
 
                 <!-- Donate via PayPal -->
                 <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
-                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'Support This Plugin', 'simple-remote-file-fetcher' ); ?></p>
-                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;"><?php esc_html_e( 'If this plugin saves you time, consider a small donation.', 'simple-remote-file-fetcher' ); ?></p>
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'Support This Plugin', 'hfarazm-remote-file-fetcher' ); ?></p>
+                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;"><?php esc_html_e( 'If this plugin saves you time, consider a small donation.', 'hfarazm-remote-file-fetcher' ); ?></p>
                     <a href="https://www.paypal.com/donate/?hosted_button_id=U9SCFW8YL8M4J"
                        target="_blank" rel="noopener"
                        style="display:inline-flex;align-items:center;gap:7px;background:#003087;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:12px;font-weight:600;width:100%;box-sizing:border-box;justify-content:center;">
@@ -240,14 +240,14 @@ function srf_fetcher_page() {
                             <path d="M19.5 3.5C18.5 1.5 16.3 1 13.8 1H6.3C5.6 1 5 1.5 4.9 2.2L2 20.2C1.9 20.7 2.3 21.2 2.8 21.2H7.3L8.4 14.2L8.3 14.6C8.4 13.9 9 13.4 9.7 13.4H12C16.4 13.4 19.8 11.6 20.8 6.4C20.8 6.3 20.9 6 20.9 6C21.2 4.8 20.9 4 19.5 3.5Z" fill="#009cde"/>
                             <path d="M20.8 6C20.8 6.3 20.8 6.3 20.8 6.4C19.8 11.6 16.4 13.4 12 13.4H9.7C9 13.4 8.4 13.9 8.3 14.6L6.8 23.8C6.7 24.2 7 24.6 7.5 24.6H11.4C12 24.6 12.5 24.2 12.6 23.6V23.3L13.4 18.3V18C13.5 17.4 14 17 14.6 17H15.2C18.9 17 21.8 15.5 22.6 11.1C23 9.3 22.8 7.7 21.8 6.7C21.5 6.4 21.2 6.2 20.8 6Z" fill="#012169"/>
                         </svg>
-                        <?php esc_html_e( 'Donate via PayPal', 'simple-remote-file-fetcher' ); ?>
+                        <?php esc_html_e( 'Donate via PayPal', 'hfarazm-remote-file-fetcher' ); ?>
                     </a>
                 </div>
 
                 <!-- Hire on Fiverr -->
                 <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
-                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'Hire Me', 'simple-remote-file-fetcher' ); ?></p>
-                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;"><?php esc_html_e( 'WordPress dev & SEO services available.', 'simple-remote-file-fetcher' ); ?></p>
+                    <p style="margin:0 0 10px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#1d2327;"><?php esc_html_e( 'Hire Me', 'hfarazm-remote-file-fetcher' ); ?></p>
+                    <p style="font-size:11px;color:#646970;margin:0 0 12px;line-height:1.5;"><?php esc_html_e( 'WordPress dev & SEO services available.', 'hfarazm-remote-file-fetcher' ); ?></p>
                     <a href="https://www.fiverr.com/users/wordpressseodev"
                        target="_blank" rel="noopener"
                        style="display:inline-flex;align-items:center;gap:7px;background:#1dbf73;color:#fff;text-decoration:none;padding:8px 12px;border-radius:4px;font-size:12px;font-weight:600;width:100%;box-sizing:border-box;justify-content:center;margin-bottom:8px;">
@@ -257,7 +257,7 @@ function srf_fetcher_page() {
                             <text x="50" y="68" text-anchor="middle" font-size="52" font-family="Arial,sans-serif" font-weight="900" fill="#1dbf73">f</text>
                             <circle cx="73" cy="26" r="7" fill="#1dbf73"/>
                         </svg>
-                        <?php esc_html_e( 'Fiverr Profile', 'simple-remote-file-fetcher' ); ?>
+                        <?php esc_html_e( 'Fiverr Profile', 'hfarazm-remote-file-fetcher' ); ?>
                     </a>
                     <a href="https://www.upwork.com/freelancers/hafizfaraz"
                        target="_blank" rel="noopener"
@@ -267,7 +267,7 @@ function srf_fetcher_page() {
                             <circle cx="50" cy="50" r="50" fill="#fff"/>
                             <text x="50" y="68" text-anchor="middle" font-size="52" font-family="Arial,sans-serif" font-weight="900" fill="#14a800">U</text>
                         </svg>
-                        <?php esc_html_e( 'Upwork Profile', 'simple-remote-file-fetcher' ); ?>
+                        <?php esc_html_e( 'Upwork Profile', 'hfarazm-remote-file-fetcher' ); ?>
                     </a>
                 </div>
 
