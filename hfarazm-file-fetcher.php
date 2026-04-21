@@ -124,19 +124,30 @@ add_action('wp_ajax_srf_start_download', function() {
 
     $size = file_exists($full_path) ? filesize($full_path) : 0;
 
+    // Check if user cancelled while download was running
+    $progress_data = json_decode( file_get_contents($progress_file), true );
+    if ( ! empty($progress_data['cancelled']) ) {
+        wp_delete_file( $full_path );
+        file_put_contents($progress_file, json_encode(['done' => true, 'cancelled' => true]), LOCK_EX);
+        wp_send_json(['status' => 'cancelled']);
+    }
+
     file_put_contents($progress_file, json_encode([
         'downloaded' => $size,
         'total'      => $size,
         'done'       => true,
     ]), LOCK_EX);
 
+    $public_url = home_url( '/' . $filename );
+
     // Log to history
     $history   = get_option('srf_download_history', []);
     $history[] = [
-        'url'      => $url,
-        'filename' => $filename,
-        'path'     => $full_path,
-        'time'     => current_time('mysql'),
+        'url'        => $url,
+        'filename'   => $filename,
+        'path'       => $full_path,
+        'public_url' => $public_url,
+        'time'       => current_time('mysql'),
     ];
     update_option('srf_download_history', $history);
 
@@ -167,6 +178,23 @@ add_action('wp_ajax_srf_get_progress', function() {
     } else {
         wp_send_json(['error' => 'not found']);
     }
+});
+
+// ── AJAX: cancel download ────────────────────────────────────────────────────
+add_action('wp_ajax_srf_cancel_download', function() {
+    check_ajax_referer('srf_ajax_nonce', 'nonce');
+    if ( ! current_user_can('manage_options') ) wp_die('Forbidden', 403);
+
+    $token         = sanitize_key( wp_unslash( $_POST['token'] ?? '' ) );
+    $progress_file = sys_get_temp_dir() . '/srf_progress_' . $token . '.json';
+
+    if ( file_exists($progress_file) ) {
+        $data              = json_decode( file_get_contents($progress_file), true ) ?: [];
+        $data['cancelled'] = true;
+        file_put_contents($progress_file, json_encode($data), LOCK_EX);
+    }
+
+    wp_send_json(['status' => 'ok']);
 });
 
 // ── Admin page ───────────────────────────────────────────────────────────────
@@ -292,8 +320,9 @@ function srf_fetcher_page() {
         const fetchBtn  = document.getElementById('srf_fetch_btn');
         const statusBox = document.getElementById('srf_status');
 
-        let pollTimer   = null;
-        let pollSamples = []; // [{time, bytes}] for speed calc
+        let pollTimer    = null;
+        let pollSamples  = []; // [{time, bytes}] for speed calc
+        let activeToken  = null;
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -348,8 +377,11 @@ function srf_fetcher_page() {
                 : `<div style="height:100%;width:40%;background:#2271b1;animation:srf_indeterminate 1.2s infinite ease-in-out;border-radius:3px;"></div>`;
 
             return `
-                <strong>Downloading&hellip;</strong>
-                <div style="margin:10px 0 4px;height:14px;background:#ddd;border-radius:3px;overflow:hidden;">${barFill}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                    <strong>Downloading&hellip;</strong>
+                    <button id="srf_cancel_btn" class="button" style="color:#b32d2e;border-color:#b32d2e;">Cancel</button>
+                </div>
+                <div style="margin:0 0 4px;height:14px;background:#ddd;border-radius:3px;overflow:hidden;">${barFill}</div>
                 <div style="display:flex;gap:24px;font-size:13px;color:#444;flex-wrap:wrap;margin-bottom:10px;">
                     <span>${sizeText}</span>
                     <span>Speed: <strong>${speed != null ? fmt_bytes(speed) + '/s' : '&mdash;'}</strong></span>
@@ -393,6 +425,7 @@ function srf_fetcher_page() {
 
                         if (!data.done) {
                             show(progressHTML(dl, tot, speed, eta), '#72aee6');
+                            attachCancelBtn(token);
                         }
                         // When done, the fetch() promise resolves and handles the final state
                     });
@@ -401,11 +434,28 @@ function srf_fetcher_page() {
 
         // ── Kick off download ─────────────────────────────────────────────────
 
+        function attachCancelBtn(token) {
+            const btn = document.getElementById('srf_cancel_btn');
+            if (!btn) return;
+            btn.onclick = function() {
+                btn.disabled = true;
+                btn.textContent = 'Cancelling…';
+                const body = new FormData();
+                body.append('action', 'srf_cancel_download');
+                body.append('nonce',  nonce);
+                body.append('token',  token);
+                fetch(ajaxUrl, {method: 'POST', body: body});
+                show('<strong>Cancelling&hellip;</strong><br><span style="font-size:13px;color:#646970;">Waiting for the current transfer to finish before removing the file.</span>', '#ffb900');
+            };
+        }
+
         function doFetch(url, conflictAction) {
             const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            activeToken = token;
 
             setFetching(true);
             show(progressHTML(0, 0, null, null), '#72aee6');
+            attachCancelBtn(token);
             startPolling(token);
 
             const body = new FormData();
@@ -438,6 +488,9 @@ function srf_fetcher_page() {
                         document.getElementById('srf_rename').onclick = function() {
                             doFetch(url, 'rename');
                         };
+
+                    } else if (data.status === 'cancelled') {
+                        show('&#10006; <strong>Download cancelled.</strong> The file was not saved.', '#d63638');
 
                     } else if (data.status === 'success') {
                         show(`
@@ -521,31 +574,72 @@ function srf_render_history() {
     if ( empty($history) ) return;
     $history = array_reverse($history);
     ?>
-    <h2 style="margin-top:28px;">Download History</h2>
+    <h2 style="margin-top:28px;"><?php esc_html_e( 'Download History', 'hfarazm-file-fetcher' ); ?></h2>
     <table class="widefat striped" style="margin-top:10px;">
         <thead>
             <tr>
-                <th>#</th>
-                <th>Filename</th>
-                <th>Source URL</th>
-                <th>Saved To</th>
-                <th>Date &amp; Time</th>
+                <th style="width:36px;">#</th>
+                <th><?php esc_html_e( 'Source URL', 'hfarazm-file-fetcher' ); ?></th>
+                <th><?php esc_html_e( 'Saved To', 'hfarazm-file-fetcher' ); ?></th>
+                <th style="width:140px;"><?php esc_html_e( 'Date &amp; Time', 'hfarazm-file-fetcher' ); ?></th>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ( $history as $i => $entry ) : ?>
+            <?php foreach ( $history as $i => $entry ) :
+                $public_url = ! empty($entry['public_url'])
+                    ? $entry['public_url']
+                    : home_url( '/' . basename($entry['path']) );
+            ?>
             <tr>
                 <td><?php echo absint( count($history) - $i ); ?></td>
-                <td><strong><?php echo esc_html($entry['filename']); ?></strong></td>
-                <td style="word-break:break-all;max-width:280px;">
+                <td style="word-break:break-all;">
                     <a href="<?php echo esc_url($entry['url']); ?>" target="_blank" rel="noopener"><?php echo esc_html($entry['url']); ?></a>
                 </td>
-                <td><code><?php echo esc_html($entry['path']); ?></code></td>
+                <td>
+                    <code style="font-size:11px;"><?php echo esc_html($entry['path']); ?></code>
+                    <div style="margin-top:6px;display:flex;gap:8px;">
+                        <a href="<?php echo esc_url($public_url); ?>"
+                           target="_blank" rel="noopener"
+                           style="font-size:11px;text-decoration:none;color:#2271b1;border:1px solid #2271b1;padding:2px 7px;border-radius:3px;white-space:nowrap;">
+                            <?php esc_html_e( 'View file', 'hfarazm-file-fetcher' ); ?>
+                        </a>
+                        <button type="button"
+                                class="srf-copy-link"
+                                data-url="<?php echo esc_attr($public_url); ?>"
+                                style="font-size:11px;cursor:pointer;background:none;border:1px solid #8c8f94;padding:2px 7px;border-radius:3px;color:#3c434a;white-space:nowrap;">
+                            <?php esc_html_e( 'Copy link', 'hfarazm-file-fetcher' ); ?>
+                        </button>
+                    </div>
+                </td>
                 <td><?php echo esc_html($entry['time']); ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
     </table>
+    <script>
+    document.querySelectorAll('.srf-copy-link').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    const orig = this.textContent;
+                    this.textContent = 'Copied!';
+                    setTimeout(() => { this.textContent = orig; }, 1500);
+                });
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const orig = this.textContent;
+                this.textContent = 'Copied!';
+                setTimeout(() => { this.textContent = orig; }, 1500);
+            }
+        });
+    });
+    </script>
     <?php
 }
 ?>
