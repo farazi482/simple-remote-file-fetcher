@@ -1,0 +1,114 @@
+<!-- Simple Remote File Fetcher — Blog Post / Documentation -->
+<!-- Copy and paste into your WordPress HTML editor -->
+
+<h2>Simple Remote File Fetcher — Download Any Remote File Directly to Your WordPress Server</h2>
+
+<p>If you've ever needed to download a large file directly to your WordPress server without going through your browser or FTP client, <strong>Simple Remote File Fetcher</strong> is the plugin for you. Just paste a URL, click a button, and the file lands straight on your server — no terminal, no FTP, no hassle.</p>
+
+<hr>
+
+<h3>What Is Simple Remote File Fetcher?</h3>
+
+<p>Simple Remote File Fetcher is a lightweight WordPress admin plugin that lets you fetch any publicly accessible file by URL and save it directly into your WordPress installation. It runs entirely server-side, so even large files download fast without taxing your browser or local internet connection.</p>
+
+<p>It was built for developers, site administrators, and anyone who regularly needs to move files onto a WordPress server quickly.</p>
+
+<hr>
+
+<h3>Key Features</h3>
+
+<ul>
+  <li>Paste any direct file URL and download it to your WP root in one click</li>
+  <li>Live progress bar with download speed and estimated time remaining</li>
+  <li>Automatic file conflict detection — choose to overwrite or auto-rename</li>
+  <li>Full download history with filename, source URL, save path, and timestamp</li>
+  <li>Restricted to Administrators only for security</li>
+  <li>No external dependencies — uses PHP cURL built into WordPress hosting</li>
+</ul>
+
+<hr>
+
+<h3>How to Install</h3>
+
+<ol>
+  <li>Download the plugin file: <code>simple-remote-file-fetcher.php</code></li>
+  <li>Upload it to your server at: <code>/wp-content/plugins/simple-remote-file-fetcher/</code></li>
+  <li>Go to <strong>WordPress Admin → Plugins → Installed Plugins</strong></li>
+  <li>Find <strong>Simple Remote File Fetcher</strong> and click <strong>Activate</strong></li>
+</ol>
+
+<p>You can also install it by going to <strong>Plugins → Add New → Upload Plugin</strong> and uploading the file directly.</p>
+
+<hr>
+
+<h3>How to Use It</h3>
+
+<p>Once activated, you will see a new <strong>File Fetcher</strong> menu item in your WordPress admin sidebar.</p>
+
+<ol>
+  <li>Click <strong>File Fetcher</strong> in the admin menu</li>
+  <li>Paste the full URL of the file you want to download into the input field</li>
+  <li>Click <strong>Fetch File</strong></li>
+  <li>Watch the live progress bar — it shows bytes downloaded, speed, and estimated time remaining</li>
+  <li>Once done, the file is saved to your WordPress root directory with the same filename as in the URL</li>
+</ol>
+
+<h4>What Happens If the File Already Exists?</h4>
+
+<p>The plugin checks for filename conflicts before downloading. If a file with the same name already exists on your server, you will be prompted to choose:</p>
+
+<ul>
+  <li><strong>Overwrite</strong> — replaces the existing file</li>
+  <li><strong>Rename</strong> — saves the new file with an incremented name (e.g. <code>file_1.zip</code>, <code>file_2.zip</code>)</li>
+</ul>
+
+<p>No accidental overwrites, ever.</p>
+
+<hr>
+
+<h3>Download History</h3>
+
+<p>Every successful download is automatically logged in a history table right on the plugin page. The table shows:</p>
+
+<ul>
+  <li>Filename</li>
+  <li>Source URL</li>
+  <li>Full server path where the file was saved</li>
+  <li>Date and time of download</li>
+</ul>
+
+<p>No need to remember what you downloaded or where it went.</p>
+
+<hr>
+
+<h3>Requirements</h3>
+
+<ul>
+  <li>WordPress 5.0 or higher</li>
+  <li>PHP 7.2 or higher</li>
+  <li>cURL enabled on your server (standard on all major hosts)</li>
+  <li>Administrator role to access the plugin</li>
+</ul>
+
+<hr>
+
+<h3>Download &amp; Source Code</h3>
+
+<p>The plugin is free and open source under the GPL v2 license.</p>
+
+<p>
+  <a href="https://github.com/farazi482/simple-remote-file-fetcher" target="_blank" rel="noopener"><strong>View on GitHub</strong></a>
+</p>
+
+<hr>
+
+<h3>Need Custom WordPress Development?</h3>
+
+<p>This plugin was built by <strong>Hfarazm Software LLC</strong>. If you need custom WordPress plugins, theme development, or SEO work, you can hire us on:</p>
+
+<ul>
+  <li><a href="https://www.fiverr.com/users/wordpressseodev" target="_blank" rel="noopener">Fiverr — wordpressseodev</a></li>
+  <li><a href="https://www.upwork.com/freelancers/hafizfaraz" target="_blank" rel="noopener">Upwork — hafizfaraz</a></li>
+</ul>
+
+<p>If this plugin saved you time, consider <a href="https://www.paypal.com/donate/?hosted_button_id=U9SCFW8YL8M4J" target="_blank" rel="noopener">buying us a coffee via PayPal</a>. It helps keep free plugins like this maintained and updated.</p>
