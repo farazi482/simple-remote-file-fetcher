@@ -25,7 +25,7 @@ add_action('admin_menu', function() {
         'manage_options',
         'remote-file-fetcher',
         'srf_fetcher_page',
-        'dashicons-cloud-download'
+        'dashicons-download'
     );
 });
 
