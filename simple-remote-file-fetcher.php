@@ -2,7 +2,7 @@
 /*
 Plugin Name: Simple Remote File Fetcher
 Description: Fetch any remote file and save it into your WordPress directory.
-Version: 2.2
+Version: 2.3
 Author: Hfarazm Software LLC
 */
 
@@ -153,29 +153,101 @@ function srf_fetcher_page() {
     <div class="wrap">
         <h2>Remote File Fetcher</h2>
 
-        <table class="form-table">
-            <tr>
-                <th scope="row"><label for="srf_url">Remote File URL</label></th>
-                <td>
-                    <input
-                        type="url"
-                        id="srf_url"
-                        style="width:600px;"
-                        placeholder="e.g. https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip"
-                    >
-                    <p class="description">The file will be saved in the WordPress root directory using the filename from the URL.</p>
-                </td>
-            </tr>
-        </table>
-        <p>
-            <button id="srf_fetch_btn" class="button button-primary">Fetch File</button>
-        </p>
+        <div style="display:flex;gap:28px;align-items:flex-start;">
 
-        <!-- Status / conflict / progress area -->
-        <div id="srf_status" style="display:none; margin:16px 0; padding:14px 18px; border-left:4px solid #72aee6; background:#f0f6fc; max-width:680px;">
-        </div>
+            <!-- ── Main content ── -->
+            <div style="flex:1;min-width:0;">
 
-        <?php srf_render_history(); ?>
+                <!-- How it works -->
+                <div style="display:flex;gap:0;margin-bottom:24px;background:#fff;border:1px solid #dcdcde;border-radius:6px;overflow:hidden;">
+                    <?php
+                    $steps = [
+                        ['🔗', 'Paste URL',       'Enter the direct URL of any remote file you want to download.'],
+                        ['🖥',  'Server Fetches',  'WordPress fetches the file server-side — no browser download needed.'],
+                        ['📊', 'Live Progress',   'Watch real-time speed, progress bar, and estimated time remaining.'],
+                        ['💾', 'Auto Saved',      'File is saved to your WP root with the original filename.'],
+                        ['📋', 'History Logged',  'Every download is recorded with path, size, and timestamp.'],
+                    ];
+                    $total = count($steps);
+                    foreach ( $steps as $idx => $s ) :
+                        $last = $idx === $total - 1;
+                    ?>
+                    <div style="flex:1;padding:14px 12px;text-align:center;border-right:<?php echo $last ? 'none' : '1px solid #dcdcde'; ?>;position:relative;">
+                        <div style="font-size:22px;margin-bottom:6px;"><?php echo $s[0]; ?></div>
+                        <div style="font-size:11px;font-weight:600;color:#1d2327;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;"><?php echo esc_html($s[1]); ?></div>
+                        <div style="font-size:11px;color:#646970;line-height:1.4;"><?php echo esc_html($s[2]); ?></div>
+                        <?php if ( ! $last ) : ?>
+                        <div style="position:absolute;right:-9px;top:50%;transform:translateY(-50%);font-size:14px;color:#aaa;z-index:1;">&#9654;</div>
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <table class="form-table" style="margin-top:0;">
+                    <tr>
+                        <th scope="row"><label for="srf_url">Remote File URL</label></th>
+                        <td>
+                            <input
+                                type="url"
+                                id="srf_url"
+                                style="width:100%;max-width:580px;"
+                                placeholder="e.g. https://file-examples.com/wp-content/storage/2017/02/zip_5MB.zip"
+                            >
+                            <p class="description">The file will be saved in the WordPress root directory using the filename from the URL.</p>
+                        </td>
+                    </tr>
+                </table>
+                <p>
+                    <button id="srf_fetch_btn" class="button button-primary">Fetch File</button>
+                </p>
+
+                <!-- Status / conflict / progress area -->
+                <div id="srf_status" style="display:none; margin:16px 0; padding:14px 18px; border-left:4px solid #72aee6; background:#f0f6fc; max-width:680px;"></div>
+
+                <?php srf_render_history(); ?>
+            </div>
+
+            <!-- ── Sidebar ── -->
+            <div style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;">
+
+                <!-- Donate -->
+                <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
+                    <div style="font-size:20px;margin-bottom:6px;">☕</div>
+                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Support This Plugin</div>
+                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">If this plugin saves you time, consider buying me a coffee!</p>
+                    <a href="https://www.paypal.com/donate/?hosted_button_id=U9SCFW8YL8M4J"
+                       target="_blank" rel="noopener"
+                       style="display:inline-block;background:#0070ba;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
+                        💙 Donate via PayPal
+                    </a>
+                </div>
+
+                <!-- Fiverr -->
+                <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
+                    <div style="font-size:20px;margin-bottom:6px;">🟢</div>
+                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Hire Me on Fiverr</div>
+                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">Need custom WordPress development or SEO work?</p>
+                    <a href="https://www.fiverr.com/users/wordpressseodev"
+                       target="_blank" rel="noopener"
+                       style="display:inline-block;background:#1dbf73;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
+                        View Fiverr Profile
+                    </a>
+                </div>
+
+                <!-- Upwork -->
+                <div style="background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:16px;text-align:center;">
+                    <div style="font-size:20px;margin-bottom:6px;">🔵</div>
+                    <div style="font-weight:600;font-size:13px;color:#1d2327;margin-bottom:6px;">Hire Me on Upwork</div>
+                    <p style="font-size:12px;color:#646970;margin:0 0 12px;">Looking for a freelance WordPress or PHP developer?</p>
+                    <a href="https://www.upwork.com/freelancers/hafizfaraz"
+                       target="_blank" rel="noopener"
+                       style="display:inline-block;background:#14a800;color:#fff;text-decoration:none;padding:8px 14px;border-radius:4px;font-size:12px;font-weight:600;">
+                        View Upwork Profile
+                    </a>
+                </div>
+
+            </div><!-- /sidebar -->
+        </div><!-- /flex wrapper -->
     </div>
 
     <script>
