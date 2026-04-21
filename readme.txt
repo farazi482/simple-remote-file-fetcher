@@ -2,9 +2,9 @@
 Contributors:      hfarazm
 Tags:              file fetcher, remote download, file downloader, server download, wget
 Requires at least: 5.0
-Tested up to:      6.7
+Tested up to:      6.9
 Requires PHP:      7.2
-Stable tag:        2.5
+Stable tag:        2.6
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -80,6 +80,15 @@ Some hosting environments block outbound HTTP requests. Contact your host and as
 3. Download history table
 
 == Changelog ==
+
+= 2.6 =
+* Fixed: replaced all cURL calls with wp_remote_get() + wp_remote_head() per Plugin Check
+* Fixed: replaced parse_url() with wp_parse_url()
+* Fixed: replaced fopen()/fclose() with wp_remote_get streaming (no direct file ops)
+* Fixed: added wp_unslash() to all $_POST/$_GET inputs before sanitization
+* Fixed: replaced preg_replace token sanitization with sanitize_key()
+* Fixed: progress polling now reads filesize() of destination file instead of cURL callbacks
+* Fixed: Tested up to updated to 6.9
 
 = 2.5 =
 * Fixed: replaced @unlink with wp_delete_file() per Plugin Check guidelines

@@ -3,7 +3,7 @@
 Plugin Name:       Simple Remote File Fetcher
 Plugin URI:        https://hfarazm.com/plugins/simple-remote-file-fetcher
 Description:       Fetch any remote file with ultra fast speed into your WordPress directory.
-Version:           2.5
+Version:           2.6
 Author:            Hfarazm Software LLC
 Author URI:        https://hfarazm.com/plugins
 License:           GPL v2 or later
@@ -12,7 +12,7 @@ Text Domain:       simple-remote-file-fetcher
 Domain Path:       /languages
 Requires at least: 5.0
 Requires PHP:      7.2
-Tested up to:      6.7
+Tested up to:      6.9
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -46,9 +46,9 @@ add_action('wp_ajax_srf_start_download', function() {
     check_ajax_referer('srf_ajax_nonce', 'nonce');
     if ( ! current_user_can('manage_options') ) wp_die('Forbidden', 403);
 
-    $url             = esc_url_raw( trim( $_POST['url'] ?? '' ) );
-    $conflict_action = sanitize_text_field( $_POST['conflict_action'] ?? 'none' );
-    $token           = preg_replace('/[^a-zA-Z0-9]/', '', $_POST['token'] ?? '');
+    $url             = esc_url_raw( wp_unslash( $_POST['url'] ?? '' ) );
+    $conflict_action = sanitize_text_field( wp_unslash( $_POST['conflict_action'] ?? 'none' ) );
+    $token           = sanitize_key( wp_unslash( $_POST['token'] ?? '' ) );
 
     // Allowlist conflict_action to prevent unexpected values
     if ( ! in_array( $conflict_action, [ 'none', 'overwrite', 'rename' ], true ) ) {
@@ -59,7 +59,12 @@ add_action('wp_ajax_srf_start_download', function() {
         wp_send_json(['status' => 'error', 'message' => __( 'Invalid request.', 'simple-remote-file-fetcher' )]);
     }
 
-    $filename = basename( parse_url($url, PHP_URL_PATH) );
+    $parsed   = wp_parse_url($url);
+    $filename = isset($parsed['path']) ? basename($parsed['path']) : '';
+
+    if ( empty($filename) ) {
+        wp_send_json(['status' => 'error', 'message' => __( 'Could not determine filename from URL.', 'simple-remote-file-fetcher' )]);
+    }
 
     // Conflict check
     if ( file_exists( ABSPATH . $filename ) && $conflict_action === 'none' ) {
@@ -79,56 +84,49 @@ add_action('wp_ajax_srf_start_download', function() {
     $full_path     = ABSPATH . $filename;
     $progress_file = sys_get_temp_dir() . '/srf_progress_' . $token . '.json';
 
-    // Init progress file so poller doesn't get "not found" on first tick
-    file_put_contents($progress_file, json_encode([
-        'downloaded' => 0, 'total' => 0, 'done' => false,
-    ]), LOCK_EX);
-
-    // ── cURL download with progress callback ─────────────────────────────────
-    $ch = curl_init($url);
-    $fp = fopen($full_path, 'wb');
-
-    if ( ! $fp ) {
-        /* translators: %s: full server path of the destination file */
-        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'Cannot write to: %s', 'simple-remote-file-fetcher' ), $full_path )]);
+    // HEAD request to get file size for progress display
+    $head  = wp_remote_head( $url, [ 'timeout' => 15, 'redirection' => 5 ] );
+    $total = 0;
+    if ( ! is_wp_error($head) ) {
+        $content_length = wp_remote_retrieve_header( $head, 'content-length' );
+        $total          = $content_length ? absint($content_length) : 0;
     }
 
-    curl_setopt_array($ch, [
-        CURLOPT_FILE             => $fp,
-        CURLOPT_FOLLOWLOCATION   => true,
-        CURLOPT_TIMEOUT          => 300,
-        CURLOPT_NOPROGRESS       => false,
-        CURLOPT_SSL_VERIFYPEER   => true,
-        CURLOPT_USERAGENT        => 'WordPress/' . get_bloginfo('version'),
-        CURLOPT_PROGRESSFUNCTION => function( $ch, $total, $downloaded ) use ($progress_file) {
-            if ( $total > 0 || $downloaded > 0 ) {
-                file_put_contents($progress_file, json_encode([
-                    'downloaded' => (int) $downloaded,
-                    'total'      => (int) $total,
-                    'done'       => false,
-                ]), LOCK_EX);
-            }
-            return 0; // returning non-zero aborts
-        },
+    // Write initial progress — store destination path so poller can read filesize()
+    file_put_contents($progress_file, json_encode([
+        'downloaded' => 0,
+        'total'      => $total,
+        'path'       => $full_path,
+        'done'       => false,
+    ]), LOCK_EX);
+
+    // ── Download using WP HTTP API with streaming ─────────────────────────────
+    $response = wp_remote_get( $url, [
+        'timeout'  => 300,
+        'stream'   => true,
+        'filename' => $full_path,
     ]);
 
-    $ok      = curl_exec($ch);
-    $err     = curl_error($ch);
-    $http    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    fclose($fp);
+    if ( is_wp_error($response) ) {
+        wp_delete_file( $full_path );
+        file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
+        wp_send_json(['status' => 'error', 'message' => $response->get_error_message()]);
+    }
 
-    if ( ! $ok || $http >= 400 ) {
+    $http = wp_remote_retrieve_response_code($response);
+    if ( $http >= 400 ) {
         wp_delete_file( $full_path );
         file_put_contents($progress_file, json_encode(['done' => true, 'error' => true]), LOCK_EX);
         /* translators: %s: HTTP status code */
-        wp_send_json(['status' => 'error', 'message' => $err ?: sprintf( __( 'HTTP error: %s', 'simple-remote-file-fetcher' ), $http )]);
+        wp_send_json(['status' => 'error', 'message' => sprintf( __( 'HTTP error: %s', 'simple-remote-file-fetcher' ), $http )]);
     }
 
     $size = file_exists($full_path) ? filesize($full_path) : 0;
 
     file_put_contents($progress_file, json_encode([
-        'downloaded' => $size, 'total' => $size, 'done' => true,
+        'downloaded' => $size,
+        'total'      => $size,
+        'done'       => true,
     ]), LOCK_EX);
 
     // Log to history
@@ -154,11 +152,16 @@ add_action('wp_ajax_srf_get_progress', function() {
     check_ajax_referer('srf_ajax_nonce', 'nonce');
     if ( ! current_user_can('manage_options') ) wp_die('Forbidden', 403);
 
-    $token         = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['token'] ?? '');
+    $token         = sanitize_key( wp_unslash( $_GET['token'] ?? '' ) );
     $progress_file = sys_get_temp_dir() . '/srf_progress_' . $token . '.json';
 
     if ( file_exists($progress_file) ) {
         $data = json_decode( file_get_contents($progress_file), true );
+        if ( $data && ! empty($data['path']) && ! $data['done'] && file_exists($data['path']) ) {
+            // Read actual bytes written so far for live progress
+            $data['downloaded'] = filesize( $data['path'] );
+        }
+        unset( $data['path'] ); // do not expose server path to browser
         wp_send_json( $data ?: ['error' => 'invalid data'] );
     } else {
         wp_send_json(['error' => 'not found']);
